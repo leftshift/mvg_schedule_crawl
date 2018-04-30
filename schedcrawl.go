@@ -28,12 +28,18 @@ foreach(
 );`
 
 type Departure struct {
-    Arrival         *time.Time       `json:"arrival"`
-    Departure       *time.Time       `json:"Departure"`
+    Line            *Line
+    Station         *Station        `json:"station"`
+    Arrival         *time.Time      `json:"arrival"`
+    Departure       *time.Time      `json:"departure"`
+}
+
+type Trip struct {
+    Departures      []*Departure    `json:"departures"`
 }
 
 // Stopping position of one individual line.
-type Stop struct {
+type Station struct {
     Name            string          `json:"name"`
     Departures      []*Departure    `json:"departures"`
 }
@@ -41,13 +47,16 @@ type Stop struct {
 // Single direction of one line
 type Line struct {
     Name            string          `json:"name"`
-    Stops           []*Stop         `json:"stops"`
+    Trips           []*Trip         `json:"trips"`
+    Stops           []*Station      `json:"stops"`
 }
 
 
 type Network struct {
+    Stations        map[string]*Station      `json:"stations"`
     Lines           []*Line         `json:"lines"`
 }
+
 
 func buildNetwork(result *overpass.Result) Network {
     var net Network
@@ -62,8 +71,16 @@ func buildNetwork(result *overpass.Result) Network {
         for _, member := range relation.Members {
             if member.Role == "stop" {
                 name := member.Node.Meta.Tags["name"]
-                stop := Stop{Name: name}
-                line.Stops = append(line.Stops, &stop)
+
+                var station *Station
+
+                if s, ok := net.Stations[name]; ok {
+                    station = s
+                } else {
+                    s := Station{Name: name}
+                    station = &s
+                }
+                line.Stops = append(line.Stops, station)
             }
         }
     }
@@ -82,6 +99,10 @@ func printNetwork(net *Network) {
     }
 }
 
+func GetAllDepartures(station *Station) {
+    
+}
+
 func main() {
     client := overpass.New()
     result, ok := client.Query(query)
@@ -91,4 +112,6 @@ func main() {
     
     net := buildNetwork(&result)
     printNetwork(&net)
+
+    // l := net.Lines[0]
 }
