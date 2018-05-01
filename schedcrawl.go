@@ -4,6 +4,7 @@ import (
     "fmt"
     "time"
     "log"
+    "strings"
     "github.com/michiwend/goefa"
     "github.com/serjvanilla/go-overpass"
 )
@@ -42,6 +43,7 @@ type Trip struct {
 // Stopping position of one individual line.
 type Station struct {
     Name            string          `json:"name"`
+    Id              *int            `json:"id"`
     Departures      []*Departure    `json:"departures"`
 }
 
@@ -134,12 +136,20 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
     }
     stop := stops[0]
 
+    station.Id = &stop.Id
+
     departures, err := stop.Departures(*firstTrainToday, 500)
     if err != nil {
         return err
     }
     fmt.Println(len(departures))
     for _, dept := range departures {
+        if strings.HasPrefix(dept.ServingLine.Number, "U") {
+            line := net.getLine(dept.ServingLine.Number)
+            dTime := dept.DateTime.Time
+            departure := Departure{Line: line, Station: station, Departure: dTime}
+            station.Departures = append(station.Departures, &departure)
+        }
         fmt.Printf("%+v\n", dept)
     }
 
