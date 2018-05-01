@@ -54,6 +54,7 @@ type Line struct {
 
 
 type Network struct {
+    Provider        *goefa.EFAProvider
     Stations        map[string]*Station      `json:"stations"`
     Lines           []*Line         `json:"lines"`
 }
@@ -88,19 +89,28 @@ func buildNetwork(result *overpass.Result) Network {
     return net
 }
 
-func printNetwork(net *Network) {
+func (net *Network) getLine(name string) *Line {
+    for _, line := range net.Lines {
+        if line.Name == name {
+            return line
+        }
+    }
+    return nil
+}
+
+func (net *Network) printNetwork() {
     for _, line := range net.Lines {
         fmt.Println(line.Name)
         for _, stop := range line.Stops {
             fmt.Println("\t", stop.Name)
             for _, departure := range stop.Departures {
-                fmt.Printf("\t\tArr:%v\t\tDep:%v", departure.Arrival, departure.Departure)
+                fmt.Printf("\t\tArr:%v\t\tDep:%v\n", departure.Arrival, departure.Departure)
             }
         }
     }
 }
 
-func CrawlAllDepartures(prov *goefa.EFAProvider, station *Station) error {
+func (net *Network) CrawlAllDepartures(station *Station) error {
     loc, err := time.LoadLocation("Local")
     if err != nil {
         return err
@@ -115,7 +125,7 @@ func CrawlAllDepartures(prov *goefa.EFAProvider, station *Station) error {
 
     fmt.Println(firstTrainToday, station.Name)
 
-    ident, stops, err := prov.FindStop(station.Name)
+    ident, stops, err := net.Provider.FindStop(station.Name)
     if err != nil {
         return err
     }
@@ -149,9 +159,11 @@ func main() {
     }
     
     net := buildNetwork(&result)
-    printNetwork(&net)
+    net.Provider = efaProv
 
     l := net.Lines[0]
     s := l.Stops[0]
-    _ = CrawlAllDepartures(efaProv, s)
+    _ = net.CrawlAllDepartures(s)
+
+    net.printNetwork()
 }
