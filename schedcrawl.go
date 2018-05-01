@@ -64,6 +64,7 @@ type Network struct {
 
 func buildNetwork(result *overpass.Result) Network {
     var net Network
+    net.Stations = make(map[string]*Station)
     for _, relation := range result.Relations {
         ref := relation.Meta.Tags["ref"]
         if ref == "" {
@@ -82,6 +83,7 @@ func buildNetwork(result *overpass.Result) Network {
                     station = s
                 } else {
                     s := Station{Name: name}
+                    net.Stations[name] = &s
                     station = &s
                 }
                 line.Stops = append(line.Stops, station)
