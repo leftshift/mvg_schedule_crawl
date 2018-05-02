@@ -5,6 +5,7 @@ import (
     "time"
     "log"
     "strings"
+    "errors"
     "github.com/michiwend/goefa"
     "github.com/serjvanilla/go-overpass"
 )
@@ -32,6 +33,7 @@ foreach(
 type Departure struct {
     Line            *Line
     Station         *Station        `json:"station"`
+    Destination     *Station        `json:"destination"`
     Arrival         *time.Time      `json:"arrival"`
     Departure       *time.Time      `json:"departure"`
 }
@@ -149,12 +151,74 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
         if strings.HasPrefix(dept.ServingLine.Number, "U") {
             line := net.getLine(dept.ServingLine.Number)
             dTime := dept.DateTime.Time
-            departure := Departure{Line: line, Station: station, Departure: dTime}
+            tmpDest := Station{Id: &dept.ServingLine.DestID}
+            departure := Departure{Line: line, Station: station, Destination: &tmpDest, Departure: dTime}
             station.Departures = append(station.Departures, &departure)
+            fmt.Println("Added dept to:", station)
+
+            if err := net.buildTrip(&departure); err != nil {
+                return err
+            }
         }
         fmt.Printf("%+v\n", dept)
     }
 
+    return nil
+}
+
+// Plans a route from the station of dept to the destination of the departure at the time of departure
+// Generates departures for all intermediate stations
+// Adds them to a new trip
+func (net *Network) buildTrip(startDept *Departure) error {
+    fromId := startDept.Station.Id
+    toId := startDept.Destination.Id
+    startTime := startDept.Departure
+
+    tmpFrom := goefa.EFAStop{Id: *fromId}
+    tmpTo := goefa.EFAStop{Id: *toId}
+
+    routes, err := net.Provider.Trip(tmpFrom, tmpTo, *startTime, "dep")
+    if err != nil {
+        return err
+    }
+
+    fmt.Printf("%+v\n", routes)
+    var route *goefa.EFARoute
+    for _, r := range routes {
+        // Only take direct routes without changing
+        if len(r.RouteParts) == 1 &&
+        r.RouteParts[0].MeansOfTransport.Type == 2{
+            route = r
+        }
+    }
+    fmt.Printf("%+v\n", route)
+
+    for i, stop := range route.RouteParts[0].Stops {
+        if i == 0 {
+            // First station already has departure
+            continue
+        }
+        var arr, dept *time.Time
+        if len(stop.Times) == 1 {
+            dept = stop.Times[0].Time
+        } else {
+            arr = stop.Times[0].Time
+            dept = stop.Times[1].Time
+        }
+
+        s, ok := net.Stations[stop.Name]
+        if !ok {
+            return errors.New("Station name " + stop.Name + " not found in network")
+        }
+        newDeparture := Departure{
+            Line: startDept.Line,
+            Destination: startDept.Destination,
+            Station: s,
+            Arrival: arr,
+            Departure: dept,
+        }
+        s.Departures = append(s.Departures, &newDeparture)
+    }
     return nil
 }
 
@@ -175,7 +239,10 @@ func main() {
 
     l := net.Lines[0]
     s := l.Stops[0]
-    _ = net.CrawlAllDepartures(s)
+    err = net.CrawlAllDepartures(s)
+    if err != nil {
+        log.Fatal(err)
+    }
 
     net.printNetwork()
 }
