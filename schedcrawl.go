@@ -79,7 +79,7 @@ func buildNetwork(result *overpass.Result) Network {
         line := Line{Name: ref}
         net.Lines = append(net.Lines, &line)
         for _, member := range relation.Members {
-            if member.Role == "stop" {
+            if member.Role == "stop" || member.Role == "stop_exit_only" {
                 name := member.Node.Meta.Tags["name"]
 
                 var station *Station
