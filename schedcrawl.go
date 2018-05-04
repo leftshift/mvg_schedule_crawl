@@ -84,7 +84,7 @@ func buildNetwork(result *overpass.Result) Network {
                 if s, ok := net.Stations[name]; ok {
                     station = s
                 } else {
-                    s := Station{Name: name}
+                    s := Station{Name: name, Departures: make([]*Departure, 0)}
                     net.Stations[name] = &s
                     station = &s
                 }
