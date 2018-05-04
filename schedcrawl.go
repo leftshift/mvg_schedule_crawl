@@ -104,6 +104,40 @@ func (net *Network) getLine(name string) *Line {
     return nil
 }
 
+// Get the station for an EFAstop, pulling out all the stops (no pun intended)
+// First see if a station of that name exists, if not, check if the id exists
+// If both fail, do a stopfinder request on the _ID_
+func (net *Network) getStationForEFARouteStop(stop *goefa.EFARouteStop) (*Station, error) {
+    station, ok := net.Stations[stop.Name]
+    // This sometimes fails because intermediate Stops in the RoutePart
+    // sometimes have abbreviated names.
+    if ok {
+        return station, nil
+    }
+
+    for _, station := range net.Stations {
+        if station.Id != nil && *station.Id == stop.Id {
+            return station, nil
+        }
+    }
+
+    idft, stops, err := net.Provider.FindStop(strconv.Itoa(stop.Id))
+    if !idft {
+        return nil, errors.New("Station " + stop.Name + " wasn't uniquely identified despite using ID " + strconv.Itoa(stop.Id))
+    }
+    if err != nil {
+        return nil, err
+    }
+    name := stops[0].Name
+
+    station, ok = net.Stations[name]
+    if !ok {
+        return nil, errors.New("Station " + name + "not found in network; got by requesting for id " + strconv.Itoa(stop.Id))
+    }
+    station.Id = stop.Id
+    return station, nil
+}
+
 func (net *Network) printNetwork() {
     for _, line := range net.Lines {
         fmt.Println(line.Name)
