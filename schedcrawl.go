@@ -5,9 +5,12 @@ import (
     "time"
     "log"
     "strings"
+    "strconv"
+//    "sort"
     "errors"
     "github.com/michiwend/goefa"
     "github.com/serjvanilla/go-overpass"
+//    "github.com/renstrom/fuzzysearch/fuzzy"
 )
 
 var query string = `
@@ -134,7 +137,7 @@ func (net *Network) getStationForEFARouteStop(stop *goefa.EFARouteStop) (*Statio
     if !ok {
         return nil, errors.New("Station " + name + "not found in network; got by requesting for id " + strconv.Itoa(stop.Id))
     }
-    station.Id = stop.Id
+    station.Id = &stop.Id
     return station, nil
 }
 
@@ -176,7 +179,7 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
 
     station.Id = &stop.Id
 
-    departures, err := stop.Departures(*firstTrainToday, 100)
+    departures, err := stop.Departures(*firstTrainToday, 500)
     if err != nil {
         return err
     }
@@ -251,7 +254,7 @@ func (net *Network) buildTrip(startDept *Departure) error {
             Departure: dept,
         }
         intermediateStation.Departures = append(intermediateStation.Departures, &newDeparture)
-        fmt.Printf("Added departure to intermediate %v", intermediateStation.Name)
+        fmt.Printf("Added departure to intermediate %v\n", intermediateStation.Name)
     }
     return nil
 }
