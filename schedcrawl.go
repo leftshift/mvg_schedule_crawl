@@ -135,7 +135,7 @@ func (net *Network) getStationForEFARouteStop(stop *goefa.EFARouteStop) (*Statio
 
     station, ok = net.Stations[name]
     if !ok {
-        return nil, errors.New("Station " + name + "not found in network; got by requesting for id " + strconv.Itoa(stop.Id))
+        return nil, errors.New("Station " + name + " not found in network; got by requesting for id " + strconv.Itoa(stop.Id))
     }
     station.Id = &stop.Id
     return station, nil
