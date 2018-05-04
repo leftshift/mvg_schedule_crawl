@@ -163,7 +163,7 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
         return err
     }
 
-    fmt.Println(firstTrainToday, station.Name)
+    fmt.Printf("Crawling %v starting at %v\n", station.Name, firstTrainToday)
 
     ident, stops, err := net.Provider.FindStop(station.Name)
     if err != nil {
@@ -176,11 +176,10 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
 
     station.Id = &stop.Id
 
-    departures, err := stop.Departures(*firstTrainToday, 500)
+    departures, err := stop.Departures(*firstTrainToday, 100)
     if err != nil {
         return err
     }
-    fmt.Println(len(departures))
     for _, dept := range departures {
         if strings.HasPrefix(dept.ServingLine.Number, "U") {
             line := net.getLine(dept.ServingLine.Number)
@@ -188,13 +187,13 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
             tmpDest := Station{Id: &dept.ServingLine.DestID}
             departure := Departure{Line: line, Station: station, Destination: &tmpDest, Departure: dTime}
             station.Departures = append(station.Departures, &departure)
-            fmt.Println("Added dept to:", station)
+            // fmt.Println("Added dept to:", station)
 
             if err := net.buildTrip(&departure); err != nil {
                 return err
             }
         }
-        fmt.Printf("%+v\n", dept)
+        // fmt.Printf("%+v\n", dept)
     }
 
     return nil
@@ -211,12 +210,12 @@ func (net *Network) buildTrip(startDept *Departure) error {
     tmpFrom := goefa.EFAStop{Id: *fromId}
     tmpTo := goefa.EFAStop{Id: *toId}
 
+    fmt.Printf("Routing from %v to %v\n", fromId, toId)
     routes, err := net.Provider.Trip(tmpFrom, tmpTo, *startTime, "dep")
     if err != nil {
         return err
     }
 
-    fmt.Printf("%+v\n", routes)
     var route *goefa.EFARoute
     for _, r := range routes {
         // Only take direct routes without changing
@@ -225,7 +224,7 @@ func (net *Network) buildTrip(startDept *Departure) error {
             route = r
         }
     }
-    fmt.Printf("%+v\n", route)
+    // fmt.Printf("%+v\n", route)
 
     for i, stop := range route.RouteParts[0].Stops {
         if i == 0 {
