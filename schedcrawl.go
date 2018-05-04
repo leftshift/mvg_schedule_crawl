@@ -240,18 +240,19 @@ func (net *Network) buildTrip(startDept *Departure) error {
             dept = stop.Times[1].Time
         }
 
-        s, ok := net.Stations[stop.Name]
-        if !ok {
-            return errors.New("Station name " + stop.Name + " not found in network")
+        intermediateStation, err := net.getStationForEFARouteStop(stop)
+        if err != nil {
+            return err
         }
         newDeparture := Departure{
             Line: startDept.Line,
             Destination: startDept.Destination,
-            Station: s,
+            Station: intermediateStation,
             Arrival: arr,
             Departure: dept,
         }
-        s.Departures = append(s.Departures, &newDeparture)
+        intermediateStation.Departures = append(intermediateStation.Departures, &newDeparture)
+        fmt.Printf("Added departure to intermediate %v", intermediateStation.Name)
     }
     return nil
 }
