@@ -10,7 +10,7 @@ import (
     "errors"
     "github.com/michiwend/goefa"
     "github.com/serjvanilla/go-overpass"
-//    "github.com/renstrom/fuzzysearch/fuzzy"
+    "github.com/renstrom/fuzzysearch/fuzzy"
 )
 
 var query string = `
@@ -32,6 +32,13 @@ foreach(
   out;
 );`
 
+// used to match names from openStreetMap with names from EFA
+var stationNameSanitizer = strings.NewReplacer(
+    "-", "",
+    ".", "",
+    "(", "",
+    ")", "",
+    " ", "")
 
 type Departure struct {
     Line            *Line
@@ -109,8 +116,10 @@ func (net *Network) getLine(name string) *Line {
 
 // Get the station for an EFAstop, pulling out all the stops (no pun intended)
 // First see if a station of that name exists, if not, check if the id exists
-// If both fail, do a stopfinder request on the _ID_
+// If both fail, do a stopfinder request on the ID
+// If that still yields an unknown name, do a fuzzy search on known stations
 func (net *Network) getStationForEFARouteStop(stop *goefa.EFARouteStop) (*Station, error) {
+    // See if stop name matches name in network
     station, ok := net.Stations[stop.Name]
     // This sometimes fails because intermediate Stops in the RoutePart
     // sometimes have abbreviated names.
@@ -118,12 +127,14 @@ func (net *Network) getStationForEFARouteStop(stop *goefa.EFARouteStop) (*Statio
         return station, nil
     }
 
+    // See if stop ID matches ID in network
     for _, station := range net.Stations {
         if station.Id != nil && *station.Id == stop.Id {
             return station, nil
         }
     }
 
+    // See if name returned by searching for stop ID matches name in network
     idft, stops, err := net.Provider.FindStop(strconv.Itoa(stop.Id))
     if !idft {
         return nil, errors.New("Station " + stop.Name + " wasn't uniquely identified despite using ID " + strconv.Itoa(stop.Id))
@@ -134,8 +145,33 @@ func (net *Network) getStationForEFARouteStop(stop *goefa.EFARouteStop) (*Statio
     name := stops[0].Name
 
     station, ok = net.Stations[name]
-    if !ok {
-        return nil, errors.New("Station " + name + " not found in network; got by requesting for id " + strconv.Itoa(stop.Id))
+    if ok {
+        station.Id = &stop.Id
+        return station, nil
+    }
+
+    // See if stop name fuzzy-matches name in Network
+    stationNames := make([]string, 0)
+    stationPtrs := make([]*Station, 0)
+    for _, station := range net.Stations {
+        sanitizedName := stationNameSanitizer.Replace(station.Name)
+        stationNames = append(stationNames, sanitizedName)
+        stationPtrs = append(stationPtrs, station)
+    }
+    fmt.Printf("fuzzy searching for %v in %v\n", stop.Name, stationNames)
+    sanitizedStopName := stationNameSanitizer.Replace(stop.Name)
+    matches := fuzzy.Find(sanitizedStopName, stationNames)
+    if len(matches) == 0 {
+        return nil, errors.New(stop.Name + " not fuzzy-found in network")
+    }
+    if len(matches) > 1 {
+        fmt.Println(matches)
+        return nil, errors.New("Matched multiple stations")
+    }
+    for i, name := range stationNames {
+        if matches[0] == name {
+            station = stationPtrs[i]
+        }
     }
     station.Id = &stop.Id
     return station, nil
