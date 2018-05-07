@@ -166,7 +166,7 @@ func (net *Network) getStationForEFARouteStop(stop *goefa.EFARouteStop) (*Statio
     }
     if len(matches) > 1 {
         fmt.Println(matches)
-        return nil, errors.New("Matched multiple stations")
+        return nil, errors.New("Fuzzy search matched multiple stations")
     }
     for i, name := range stationNames {
         if matches[0] == name {
@@ -213,9 +213,15 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
     }
     stop := stops[0]
 
+    stopLines, err := stop.Lines()
+    if err != nil {
+        return err
+    }
+    subwayLines := filterLinesByMOT(stopLines, 2)
+
     station.Id = &stop.Id
 
-    departures, err := stop.Departures(*firstTrainToday, 500)
+    departures, err := stop.DeparturesForLines(*firstTrainToday, 500, subwayLines)
     if err != nil {
         return err
     }
@@ -232,7 +238,7 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
                 return err
             }
         }
-        // fmt.Printf("%+v\n", dept)
+        fmt.Printf("%+v\n", dept)
     }
 
     return nil
@@ -310,8 +316,9 @@ func main() {
     net := buildNetwork(&result)
     net.Provider = efaProv
 
-    l := net.Lines[0]
-    s := l.Stops[0]
+    //l := net.Lines[0]
+    //s := l.Stops[0]
+    s := net.Stations["Mangfallplatz"]
     err = net.CrawlAllDepartures(s)
     if err != nil {
         log.Fatal(err)

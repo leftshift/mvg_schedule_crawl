@@ -2,6 +2,7 @@ package main
 
 import (
     "time"
+    "github.com/michiwend/goefa"
 )
 
 func getTimeToday(oldTime time.Time) (*time.Time, error) {
@@ -17,4 +18,15 @@ func getTimeToday(oldTime time.Time) (*time.Time, error) {
 
     t := time.Date(year, month, day, hour, minute, second, 0, loc)
     return &t, nil
+}
+
+func filterLinesByMOT(lines []*goefa.EFAServingLine, mot int) []*goefa.EFAServingLine {
+    result := make([]*goefa.EFAServingLine, 0)
+
+    for _, line := range lines {
+        if int(line.MotType) == mot {
+            result = append(result, line)
+        }
+    }
+    return result
 }
