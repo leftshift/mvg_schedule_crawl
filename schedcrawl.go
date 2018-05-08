@@ -32,6 +32,8 @@ foreach(
   out;
 );`
 
+var routeMots []goefa.EFAMotType = []goefa.EFAMotType{2}
+
 // used to match names from openStreetMap with names from EFA
 var stationNameSanitizer = strings.NewReplacer(
     "-", "",
@@ -238,7 +240,7 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
                 return err
             }
         }
-        fmt.Printf("%+v\n", dept)
+        //fmt.Printf("%+v\n", dept)
     }
 
     return nil
@@ -256,22 +258,23 @@ func (net *Network) buildTrip(startDept *Departure) error {
     tmpTo := goefa.EFAStop{Id: *toId}
 
     fmt.Printf("Routing from %v to %v\n", fromId, toId)
-    routes, err := net.Provider.Trip(tmpFrom, tmpTo, *startTime, "dep")
+    routes, err := net.Provider.TripUsingMot(tmpFrom, tmpTo, *startTime, "dep", routeMots)
     if err != nil {
         return err
     }
 
-    var route *goefa.EFARoute
+    directRoutes := make([]*goefa.EFARoute, 0)
     for _, r := range routes {
         // Only take direct routes without changing
         if len(r.RouteParts) == 1 &&
         r.RouteParts[0].MeansOfTransport.Type == 2{
-            route = r
+            fmt.Printf("%+v\n", r)
+            directRoutes = append(directRoutes, r)
         }
     }
     // fmt.Printf("%+v\n", route)
 
-    for i, stop := range route.RouteParts[0].Stops {
+    for i, stop := range directRoutes[0].RouteParts[0].Stops {
         if i == 0 {
             // First station already has departure
             continue
