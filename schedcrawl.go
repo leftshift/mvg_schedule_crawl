@@ -246,6 +246,37 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
     return nil
 }
 
+func (net *Network) addIntermediateDepartures(stops []*goefa.EFARouteStop, line *Line, destination *Station) error {
+    for i, stop := range stops {
+        if i == 0 {
+            // First station already has departure
+            continue
+        }
+        var arr, dept *time.Time
+        if len(stop.Times) == 1 {
+            dept = stop.Times[0].Time
+        } else {
+            arr = stop.Times[0].Time
+            dept = stop.Times[1].Time
+        }
+
+        intermediateStation, err := net.getStationForEFARouteStop(stop)
+        if err != nil {
+            return err
+        }
+        newDeparture := Departure{
+            Line: line,
+            Destination: destination,
+            Station: intermediateStation,
+            Arrival: arr,
+            Departure: dept,
+        }
+        intermediateStation.Departures = append(intermediateStation.Departures, &newDeparture)
+        fmt.Printf("Added departure to intermediate %v\n", intermediateStation.Name)
+    }
+    return nil
+}
+
 // Plans a route from the station of dept to the destination of the departure at the time of departure
 // Generates departures for all intermediate stations
 // Adds them to a new trip
@@ -267,40 +298,18 @@ func (net *Network) buildTrip(startDept *Departure) error {
     for _, r := range routes {
         // Only take direct routes without changing
         if len(r.RouteParts) == 1 &&
-        r.RouteParts[0].MeansOfTransport.Type == 2{
+        r.RouteParts[0].MeansOfTransport.Type == 2 && // only take U-Bahn
+        r.RouteParts[0].MeansOfTransport.Shortname == startDept.Line.Name { // only take routes with the same line as the departure we're looking at
             fmt.Printf("%+v\n", r)
             directRoutes = append(directRoutes, r)
         }
     }
     // fmt.Printf("%+v\n", route)
-
-    for i, stop := range directRoutes[0].RouteParts[0].Stops {
-        if i == 0 {
-            // First station already has departure
-            continue
-        }
-        var arr, dept *time.Time
-        if len(stop.Times) == 1 {
-            dept = stop.Times[0].Time
-        } else {
-            arr = stop.Times[0].Time
-            dept = stop.Times[1].Time
-        }
-
-        intermediateStation, err := net.getStationForEFARouteStop(stop)
+    for _, r = range directRoutes {
+        err = net.addIntermediateDepartures(r.RouteParts[0].Stops, startDept.Line, startDept.Destination)
         if err != nil {
             return err
         }
-        newDeparture := Departure{
-            Line: startDept.Line,
-            Destination: startDept.Destination,
-            Station: intermediateStation,
-            Arrival: arr,
-            Departure: dept,
-        }
-        intermediateStation.Departures = append(intermediateStation.Departures, &newDeparture)
-        fmt.Printf("Added departure to intermediate %v\n", intermediateStation.Name)
-    }
     return nil
 }
 
