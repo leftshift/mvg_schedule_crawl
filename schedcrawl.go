@@ -243,8 +243,13 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
         if strings.HasPrefix(dept.ServingLine.Number, "U") {
             line := net.getLine(dept.ServingLine.Number)
             dTime := dept.DateTime.Time
-            tmpDest := Station{Id: &dept.ServingLine.DestID}
-            departure := Departure{Line: line, Station: station, Destination: &tmpDest, Departure: dTime}
+            tmpDest := goefa.EFARouteStop{Id: dept.ServingLine.DestID} // bit of a hack, we use the ID-To-Name-Magic
+            dest, err := net.getStationForEFARouteStop(&tmpDest)
+            if err != nil {
+                return err
+            }
+
+            departure := Departure{Line: line, Station: station, Destination: dest, Departure: dTime}
             station.Departures = append(station.Departures, &departure)
             // fmt.Println("Added dept to:", station)
 
