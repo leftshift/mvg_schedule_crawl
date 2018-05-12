@@ -249,6 +249,11 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
                 return err
             }
 
+            if station.HasDeparture(*dTime, line, dest) {
+                // Departure has already been added by route options offered by previous departure
+                fmt.Println(station.Name, "already got departure from previous route at", dTime)
+                continue
+            }
             departure := Departure{Line: line, Station: station, Destination: dest, Departure: dTime}
             station.Departures = append(station.Departures, &departure)
             // fmt.Println("Added dept to:", station)
@@ -265,10 +270,6 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
 
 func (net *Network) addIntermediateDepartures(stops []*goefa.EFARouteStop, line *Line, destination *Station) error {
     for i, stop := range stops {
-        if i == 0 {
-            // First station already has departure
-            continue
-        }
         var arr, dept *time.Time
         if len(stop.Times) == 1 {
             dept = stop.Times[0].Time
@@ -281,6 +282,17 @@ func (net *Network) addIntermediateDepartures(stops []*goefa.EFARouteStop, line 
         if err != nil {
             return err
         }
+
+        if i == 0 {
+            // if we're on the first suggested route, this departure should already exist.
+            // If we're on one of the later iterations, we still need to add it
+            if intermediateStation.HasDeparture(*dept, line, destination) {
+                // on first suggested route, this is the departure we used to plan the routes
+                fmt.Println(intermediateStation.Name, " doesn't need departure to be added at", dept)
+                continue
+            }
+        }
+
         newDeparture := Departure{
             Line: line,
             Destination: destination,
