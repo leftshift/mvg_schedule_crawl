@@ -61,6 +61,18 @@ type Station struct {
     Departures      []*Departure    `json:"departures"`
 }
 
+func (station *Station) HasDeparture(departureTime time.Time, line *Line, destination *Station) bool {
+    for _, dept := range station.Departures {
+        if dept.Line == line &&
+        dept.Destination == destination &&
+        dept.Departure.Equal(departureTime) {
+            return true
+        }
+        // optimize: start from end, return false once past specifed time
+    }
+    return false
+}
+
 // Single direction of one line
 type Line struct {
     Name            string          `json:"name"`
