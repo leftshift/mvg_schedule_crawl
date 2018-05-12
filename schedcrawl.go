@@ -301,7 +301,7 @@ func (net *Network) addIntermediateDepartures(stops []*goefa.EFARouteStop, line 
             Departure: dept,
         }
         intermediateStation.Departures = append(intermediateStation.Departures, &newDeparture)
-        fmt.Printf("Added departure to intermediate %v\n", intermediateStation.Name)
+        fmt.Printf("Added departure to intermediate %v\t%v\n", intermediateStation.Name, dept)
     }
     return nil
 }
@@ -317,7 +317,7 @@ func (net *Network) buildTrip(startDept *Departure) error {
     tmpFrom := goefa.EFAStop{Id: *fromId}
     tmpTo := goefa.EFAStop{Id: *toId}
 
-    fmt.Printf("Routing from %v to %v\n", fromId, toId)
+    fmt.Printf("Routing from %v to %v\n", *fromId, *toId)
     routes, err := net.Provider.TripUsingMot(tmpFrom, tmpTo, *startTime, "dep", routeMots)
     if err != nil {
         return err
@@ -329,16 +329,18 @@ func (net *Network) buildTrip(startDept *Departure) error {
         if len(r.RouteParts) == 1 &&
         r.RouteParts[0].MeansOfTransport.Type == 2 && // only take U-Bahn
         r.RouteParts[0].MeansOfTransport.Shortname == startDept.Line.Name { // only take routes with the same line as the departure we're looking at
-            fmt.Printf("%+v\n", r)
+            // fmt.Printf("%+v\n", r)
             directRoutes = append(directRoutes, r)
         }
     }
     // fmt.Printf("%+v\n", route)
-    for _, r = range directRoutes {
+    for i, r := range directRoutes {
+        fmt.Println("Adding intermediates for route", i)
         err = net.addIntermediateDepartures(r.RouteParts[0].Stops, startDept.Line, startDept.Destination)
         if err != nil {
             return err
         }
+    }
     return nil
 }
 
