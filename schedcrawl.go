@@ -347,6 +347,7 @@ func (net *Network) addIntermediateDepartures(stops []*goefa.EFARouteStop, line 
 // Generates departures for all intermediate stations
 // Adds them to a new trip
 func (net *Network) buildTrip(startDept *Departure) error {
+    var numRoutes int
     fromId := startDept.Station.Id
     toId := startDept.Destination.Id
     startTime := startDept.Departure
@@ -358,13 +359,27 @@ func (net *Network) buildTrip(startDept *Departure) error {
     t := startTime.Add(oneMin)
     startTime = &t
 
+    // More hacks: If startDept doesn't span the whole line, only plan one route so we don't
+    // plan only part of the later trips
+    if startDept.Destination == startDept.Line.Stops[0] ||
+       startDept.Destination == startDept.Line.Stops[len(startDept.Line.Stops)-1] {
+        numRoutes = 50 // our Destination is one end of the line, so we're free to plan to our heart's content
+    } else {
+        fmt.Println("only planning one trip because", startDept.Destination.Name, "is not a line terminus")
+        numRoutes = 1 // oh no, we can only plan one trip :(
+    }
+
     tmpFrom := goefa.EFAStop{Id: *fromId}
     tmpTo := goefa.EFAStop{Id: *toId}
 
     fmt.Printf("Routing from %v to %v at \t%v\n", *fromId, *toId, *startTime)
-    routes, err := net.Provider.TripUsingMot(tmpFrom, tmpTo, *startTime, "dep", routeMots, 50)
+    routes, err := net.Provider.TripUsingMot(tmpFrom, tmpTo, *startTime, "dep", routeMots, numRoutes)
     if err != nil {
         return err
+    }
+
+    if len(routes) == 0 {
+        return errors.New("Route from "+startDept.Station.Name+" to "+startDept.Destination.Name+ " yielded no results.")
     }
 
     directRoutes := make([]*goefa.EFARoute, 0)
@@ -419,7 +434,7 @@ func main() {
         
         // ...and the other
         s = line.Stops[len(line.Stops)-1]
-        err := net.CrawlAllDepartures(s)
+        err = net.CrawlAllDepartures(s)
         if err != nil {
             log.Fatal(err)
         }
