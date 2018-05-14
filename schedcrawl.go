@@ -239,7 +239,13 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
     if err != nil {
         return err
     }
+    fmt.Println("Got", len(departures), "departures")
     for _, dept := range departures {
+        if dept.DateTime.Time.Day() != firstTrainToday.Day() {
+            // It seems like this doesn't actually happen, the efa-api seems to only return departures within 24h.
+            fmt.Println("Reached last departure for the day")
+            return nil
+        }
         if strings.HasPrefix(dept.ServingLine.Number, "U") {
             line := net.getLine(dept.ServingLine.Number)
             dTime := dept.DateTime.Time
@@ -314,6 +320,13 @@ func (net *Network) buildTrip(startDept *Departure) error {
     toId := startDept.Destination.Id
     startTime := startDept.Departure
 
+    // Hacky and odd: For some reason, the xml api always also returns one route in the past.
+    // This isn't very useful to us, so we add one minute so the first result actually starts at startTime
+    // This may break at any time
+    oneMin := time.Duration(time.Minute)
+    t := startTime.Add(oneMin)
+    startTime = &t
+
     tmpFrom := goefa.EFAStop{Id: *fromId}
     tmpTo := goefa.EFAStop{Id: *toId}
 
@@ -326,6 +339,10 @@ func (net *Network) buildTrip(startDept *Departure) error {
     directRoutes := make([]*goefa.EFARoute, 0)
     for _, r := range routes {
         // Only take direct routes without changing
+        if startTime.Day() != r.RouteParts[0].Stops[0].Times[1].Day() {
+            fmt.Println("Reached next day, breaking")
+            break
+        }
         if len(r.RouteParts) == 1 &&
         r.RouteParts[0].MeansOfTransport.Type == 2 && // only take U-Bahn
         r.RouteParts[0].MeansOfTransport.Shortname == startDept.Line.Name { // only take routes with the same line as the departure we're looking at
