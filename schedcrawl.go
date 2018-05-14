@@ -317,8 +317,8 @@ func (net *Network) buildTrip(startDept *Departure) error {
     tmpFrom := goefa.EFAStop{Id: *fromId}
     tmpTo := goefa.EFAStop{Id: *toId}
 
-    fmt.Printf("Routing from %v to %v\n", *fromId, *toId)
-    routes, err := net.Provider.TripUsingMot(tmpFrom, tmpTo, *startTime, "dep", routeMots)
+    fmt.Printf("Routing from %v to %v at \t%v\n", *fromId, *toId, *startTime)
+    routes, err := net.Provider.TripUsingMot(tmpFrom, tmpTo, *startTime, "dep", routeMots, 50)
     if err != nil {
         return err
     }
