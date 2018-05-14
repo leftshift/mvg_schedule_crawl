@@ -106,6 +106,9 @@ func buildNetwork(result *overpass.Result) Network {
             continue
         }
 
+        if l := net.getLine(ref); l != nil {
+            continue
+        }
         line := Line{Name: ref}
         net.Lines = append(net.Lines, &line)
         for _, member := range relation.Members {
@@ -284,6 +287,11 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
 }
 
 func (net *Network) addIntermediateDepartures(stops []*goefa.EFARouteStop, line *Line, destination *Station) error {
+    trip := Trip{
+        Departures: make([]*Departure, 0),
+    }
+    line.Trips = append(line.Trips, &trip)
+
     for i, stop := range stops {
         var arr, dept *time.Time
         if len(stop.Times) == 1 {
@@ -293,15 +301,21 @@ func (net *Network) addIntermediateDepartures(stops []*goefa.EFARouteStop, line 
             dept = stop.Times[1].Time
         }
 
+        if dept != nil && dept.Year() == -1 {
+            // This is only used at the terminus, as the train 'never' arrives/departs.
+            // No clue why they don't just use one value, but whatever.
+            // Thing is, year -1 is not json-serializable, so we'll nil it instead
+
+            dept = nil
+        }
+        if arr != nil && arr.Year() == -1 {
+            arr = nil
+        }
+
         intermediateStation, err := net.getStationForEFARouteStop(stop)
         if err != nil {
             return err
         }
-
-        trip := Trip{
-            Departures: make([]*Departure, 0),
-        }
-        line.Trips = append(line.Trips, &trip)
 
         if i == 0 {
             // if we're on the first suggested route, this departure should already exist.
