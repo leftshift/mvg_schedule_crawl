@@ -89,6 +89,14 @@ type Line struct {
     Stops           []*Station      `json:"-"`
 }
 
+func (line *Line) IsTerminus(station *Station) bool {
+    if station == line.Stops[0] ||
+       station == line.Stops[len(line.Stops)-1] {
+           return true
+    }
+    return false
+}
+
 
 type Network struct {
     Provider        *goefa.EFAProvider          `json:"-"`
@@ -128,6 +136,8 @@ func buildNetwork(result *overpass.Result) Network {
             }
         }
     }
+    emptyLine := Line{Name:""}
+    net.Lines = append(net.Lines, &emptyLine)
     return net
 }
 
@@ -260,6 +270,15 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
         }
         if strings.HasPrefix(dept.ServingLine.Number, "U") {
             line := net.getLine(dept.ServingLine.Number)
+            if ! line.IsTerminus(station) {
+                if line.Name != "" {
+                    // This station is not a Terminus for the given line, don't do anything about it then
+                    continue
+                } else {
+                    // ???
+                    // I honestly don't know?
+                }
+            }
             dTime := dept.DateTime.Time
             tmpDest := goefa.EFARouteStop{Id: dept.ServingLine.DestID} // bit of a hack, we use the ID-To-Name-Magic
             dest, err := net.getStationForEFARouteStop(&tmpDest)
@@ -322,7 +341,6 @@ func (net *Network) addIntermediateDepartures(stops []*goefa.EFARouteStop, line 
             // If we're on one of the later iterations, we still need to add it
             dept, err := intermediateStation.GetDeparture(*dept, line, destination)
             if err == nil {
-                // on first suggested route, this is the departure we used to plan the routes
                 fmt.Println(intermediateStation.Name, " doesn't need departure to be added at", dept)
                 trip.Departures = append(trip.Departures, dept)
                 continue
@@ -359,14 +377,18 @@ func (net *Network) buildTrip(startDept *Departure) error {
     t := startTime.Add(oneMin)
     startTime = &t
 
-    // More hacks: If startDept doesn't span the whole line, only plan one route so we don't
-    // plan only part of the later trips
-    if startDept.Destination == startDept.Line.Stops[0] ||
-       startDept.Destination == startDept.Line.Stops[len(startDept.Line.Stops)-1] {
-        numRoutes = 50 // our Destination is one end of the line, so we're free to plan to our heart's content
+    if startDept.Line.Name == "" {
+        // Wayy down the rabbit hole, you realize out some trains don't have numbers and I don't even 
+        numRoutes = 1
     } else {
-        fmt.Println("only planning one trip because", startDept.Destination.Name, "is not a line terminus")
-        numRoutes = 1 // oh no, we can only plan one trip :(
+        // More hacks: If startDept doesn't span the whole line, only plan one route so we don't
+        // plan only part of the later trips
+        if startDept.Line.IsTerminus(startDept.Destination) {
+            numRoutes = 50 // our Destination is one end of the line, so we're free to plan to our heart's content
+        } else {
+            fmt.Println("only planning one trip because", startDept.Destination.Name, "is not a line terminus")
+            numRoutes = 1 // oh no, we can only plan one trip :(
+        }
     }
 
     tmpFrom := goefa.EFAStop{Id: *fromId}
