@@ -301,7 +301,7 @@ func (net *Network) addIntermediateDepartures(stops []*goefa.EFARouteStop, line 
         trip := Trip{
             Departures: make([]*Departure, 0),
         }
-        line.Trips = append(line.Trips, trip)
+        line.Trips = append(line.Trips, &trip)
 
         if i == 0 {
             // if we're on the first suggested route, this departure should already exist.
