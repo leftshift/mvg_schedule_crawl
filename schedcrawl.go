@@ -6,8 +6,9 @@ import (
     "log"
     "strings"
     "strconv"
-//    "sort"
     "errors"
+    "encoding/json"
+    "io/ioutil"
     "github.com/leftshift/goefa"
     "github.com/serjvanilla/go-overpass"
     "github.com/renstrom/fuzzysearch/fuzzy"
@@ -401,4 +402,10 @@ func main() {
     }
 
     net.printNetwork()
+
+    b, err := json.Marshal(net)
+    if err != nil {
+        log.Fatal(err)
+    }
+    err = ioutil.WriteFile("network.json", b, 0644)
 }
