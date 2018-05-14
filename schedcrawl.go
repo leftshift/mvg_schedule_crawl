@@ -409,10 +409,21 @@ func main() {
 
     //l := net.Lines[0]
     //s := l.Stops[0]
-    s := net.Stations["Mangfallplatz"]
-    err = net.CrawlAllDepartures(s)
-    if err != nil {
-        log.Fatal(err)
+    for _, line := range net.Lines {
+        // Crawl one direction
+        s := line.Stops[0]
+        err := net.CrawlAllDepartures(s)
+        if err != nil {
+            log.Fatal(err)
+        }
+        
+        // ...and the other
+        s = line.Stops[len(line.Stops)-1]
+        err := net.CrawlAllDepartures(s)
+        if err != nil {
+            log.Fatal(err)
+        }
+
     }
 
     net.printNetwork()
