@@ -2,7 +2,7 @@ package main
 
 import (
     "time"
-    "github.com/michiwend/goefa"
+    "github.com/leftshift/goefa"
 )
 
 func getTimeToday(oldTime time.Time) (*time.Time, error) {

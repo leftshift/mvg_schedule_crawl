@@ -8,7 +8,7 @@ import (
     "strconv"
 //    "sort"
     "errors"
-    "github.com/michiwend/goefa"
+    "github.com/leftshift/goefa"
     "github.com/serjvanilla/go-overpass"
     "github.com/renstrom/fuzzysearch/fuzzy"
 )
