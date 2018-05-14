@@ -289,12 +289,19 @@ func (net *Network) addIntermediateDepartures(stops []*goefa.EFARouteStop, line 
             return err
         }
 
+        trip := Trip{
+            Departures: make([]*Departure, 0),
+        }
+        line.Trips = append(line.Trips, trip)
+
         if i == 0 {
             // if we're on the first suggested route, this departure should already exist.
             // If we're on one of the later iterations, we still need to add it
-            if intermediateStation.HasDeparture(*dept, line, destination) {
+            dept, err := intermediateStation.GetDeparture(*dept, line, destination)
+            if err == nil {
                 // on first suggested route, this is the departure we used to plan the routes
                 fmt.Println(intermediateStation.Name, " doesn't need departure to be added at", dept)
+                trip.Departures = append(trip.Departures, dept)
                 continue
             }
         }
@@ -307,6 +314,7 @@ func (net *Network) addIntermediateDepartures(stops []*goefa.EFARouteStop, line 
             Departure: dept,
         }
         intermediateStation.Departures = append(intermediateStation.Departures, &newDeparture)
+        trip.Departures = append(trip.Departures, &newDeparture)
         fmt.Printf("Added departure to intermediate %v\t%v\n", intermediateStation.Name, dept)
     }
     return nil
