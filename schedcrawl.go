@@ -43,7 +43,7 @@ var stationNameSanitizer = strings.NewReplacer(
     " ", "")
 
 type Departure struct {
-    Line            *Line
+    Line            *Line           `json:"-"`
     Station         *Station        `json:"station"`
     Destination     *Station        `json:"destination"`
     Arrival         *time.Time      `json:"arrival"`
@@ -58,32 +58,40 @@ type Trip struct {
 type Station struct {
     Name            string          `json:"name"`
     Id              *int            `json:"id"`
-    Departures      []*Departure    `json:"departures"`
+    Departures      []*Departure    `json:"-"`
 }
 
 func (station *Station) HasDeparture(departureTime time.Time, line *Line, destination *Station) bool {
+    _, err := station.GetDeparture(departureTime, line, destination)
+    if err == nil {
+        return true
+    }
+    return false
+}
+
+func (station *Station) GetDeparture(departureTime time.Time, line *Line, destination *Station) (*Departure, error) {
     for _, dept := range station.Departures {
         if dept.Line == line &&
         dept.Destination == destination &&
         dept.Departure.Equal(departureTime) {
-            return true
+            return dept, nil
         }
         // optimize: start from end, return false once past specifed time
     }
-    return false
+    return nil, errors.New("Station doesn't have matching departure")
 }
 
 // Single direction of one line
 type Line struct {
     Name            string          `json:"name"`
     Trips           []*Trip         `json:"trips"`
-    Stops           []*Station      `json:"stops"`
+    Stops           []*Station      `json:"-"`
 }
 
 
 type Network struct {
-    Provider        *goefa.EFAProvider
-    Stations        map[string]*Station      `json:"stations"`
+    Provider        *goefa.EFAProvider          `json:"-"`
+    Stations        map[string]*Station         `json:"-"`
     Lines           []*Line         `json:"lines"`
 }
 
