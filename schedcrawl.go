@@ -209,7 +209,7 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
         return err
     }
 
-    firstTrain := time.Date(0, 0, 0, 03, 00, 00, 0, loc)
+    firstTrain := time.Date(0, 0, 0, 00, 00, 00, 0, loc)
     firstTrainToday, err := getTimeToday(firstTrain)
 
     if err != nil {
