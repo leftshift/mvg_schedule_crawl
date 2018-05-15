@@ -451,8 +451,13 @@ func main() {
     net := buildNetwork(&result)
     net.Provider = efaProv
 
-    //l := net.Lines[0]
-    //s := l.Stops[0]
+    // s := net.Stations["Olympiazentrum"]
+    // err = net.CrawlAllDepartures(s)
+    // if err != nil {
+    //     log.Fatal(err)
+    // }
+
+    // log.Fatal("--")
     for _, line := range net.Lines {
         if line.Name == "U" {
             continue
