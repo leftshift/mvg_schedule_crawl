@@ -453,6 +453,9 @@ func main() {
     //l := net.Lines[0]
     //s := l.Stops[0]
     for _, line := range net.Lines {
+        if line.Name == "U" {
+            continue
+        }
         // Crawl one direction
         s := line.Stops[0]
         err := net.CrawlAllDepartures(s)
