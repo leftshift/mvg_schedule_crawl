@@ -379,9 +379,9 @@ func (net *Network) buildTrip(startDept *Departure) error {
     // Hacky and odd: For some reason, the xml api always also returns one route in the past.
     // This isn't very useful to us, so we add one minute so the first result actually starts at startTime
     // This may break at any time
-    oneMin := time.Duration(time.Minute)
-    t := startTime.Add(oneMin)
-    startTime = &t
+    // oneMin := time.Duration(time.Minute)
+    // t := startTime.Add(oneMin)
+    // startTime = &t
 
     if startDept.Line.Name == "" {
         // Wayy down the rabbit hole, you realize out some trains don't have numbers and I don't even 
