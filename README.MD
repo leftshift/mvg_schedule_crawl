@@ -1,9 +1,10 @@
 # MVG Schedule crawler
 
-Scrape all scheduled trips across the Munich U-Bahn using the Overpass API to get the network topography from OpenStreetMap, and the MVV EFA Api to load departures for all line termini and plan trips to the other terminus, giving arrivals and departures for intermediate stations.
+Scrape all scheduled trips across the Munich U-Bahn with departure times of all stations.
 
 This could be extended to also crawl bus/tram routes, if you have questions about that, feel free to contact me.
 
+## Output
 Currently, it outputs `network.json`, which looks like this:
 
 ```
@@ -48,3 +49,6 @@ Currently, it outputs `network.json`, which looks like this:
     ]
 }
 ```
+
+## What's used
+Using the Overpass API, we get the network topography from OpenStreetMap. With the MVV (EFA)[https://efa.mvv-muenchen.de/index.html] Api, we load departures for all line termini and plan trips to the other terminus, giving arrivals and departures for intermediate stations.
