@@ -412,15 +412,16 @@ func (net *Network) buildTrip(startDept *Departure) error {
 
     directRoutes := make([]*goefa.EFARoute, 0)
     for _, r := range routes {
-        // Only take direct routes without changing
-        if startTime.Day() != r.RouteParts[0].Stops[0].Times[1].Day() {
-            fmt.Println("Reached next day, breaking")
-            break
-        }
         if len(r.RouteParts) == 1 &&
         r.RouteParts[0].MeansOfTransport.Type == 2 && // only take U-Bahn
         r.RouteParts[0].MeansOfTransport.Shortname == startDept.Line.Name { // only take routes with the same line as the departure we're looking at
             // fmt.Printf("%+v\n", r)
+            // Only take direct routes without changing
+            fmt.Printf("%+v\n", r.RouteParts[0].Stops)
+            if startTime.Day() != r.RouteParts[0].Stops[0].Times[1].Day() {
+                fmt.Println("Reached next day, breaking")
+                break
+            }
             directRoutes = append(directRoutes, r)
         }
     }
