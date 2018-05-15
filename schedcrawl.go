@@ -283,6 +283,7 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
             tmpDest := goefa.EFARouteStop{Id: dept.ServingLine.DestID} // bit of a hack, we use the ID-To-Name-Magic
             dest, err := net.getStationForEFARouteStop(&tmpDest)
             if err != nil {
+                fmt.Printf("Unknown destination: %+v\n", dept)
                 return err
             }
 
