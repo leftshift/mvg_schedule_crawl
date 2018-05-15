@@ -39,6 +39,7 @@ var routeMots []goefa.EFAMotType = []goefa.EFAMotType{2}
 var stationNameSanitizer = strings.NewReplacer(
     "-", "",
     ".", "",
+    ",", "",
     "(", "",
     ")", "",
     " ", "")
