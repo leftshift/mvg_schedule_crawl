@@ -91,6 +91,10 @@ type Line struct {
 }
 
 func (line *Line) IsTerminus(station *Station) bool {
+    // Special case for trains without line number
+    if line.Name == "U" {
+        return false
+    }
     if station == line.Stops[0] ||
        station == line.Stops[len(line.Stops)-1] {
            return true
@@ -137,7 +141,7 @@ func buildNetwork(result *overpass.Result) Network {
             }
         }
     }
-    emptyLine := Line{Name:""}
+    emptyLine := Line{Name:"U"}
     net.Lines = append(net.Lines, &emptyLine)
     return net
 }
@@ -272,7 +276,7 @@ func (net *Network) CrawlAllDepartures(station *Station) error {
         if strings.HasPrefix(dept.ServingLine.Number, "U") {
             line := net.getLine(dept.ServingLine.Number)
             if ! line.IsTerminus(station) {
-                if line.Name != "" {
+                if line.Name != "U" {
                     // This station is not a Terminus for the given line, don't do anything about it then
                     continue
                 } else {
