@@ -194,8 +194,8 @@ func (net *Network) getStationForEFARouteStop(stop *goefa.EFARouteStop) (*Statio
         stationNames = append(stationNames, sanitizedName)
         stationPtrs = append(stationPtrs, station)
     }
-    fmt.Printf("fuzzy searching for %v in %v\n", stop.Name, stationNames)
-    sanitizedStopName := stationNameSanitizer.Replace(stop.Name)
+    fmt.Printf("fuzzy searching for %v in %v\n", name, stationNames)
+    sanitizedStopName := stationNameSanitizer.Replace(name)
     matches := fuzzy.Find(sanitizedStopName, stationNames)
     if len(matches) == 0 {
         return nil, errors.New(stop.Name + " not fuzzy-found in network")
