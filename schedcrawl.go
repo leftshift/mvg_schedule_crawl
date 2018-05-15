@@ -440,6 +440,7 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
+    efaProv.EnableRealtime = false
 
     client := overpass.New()
     result, ok := client.Query(query)
