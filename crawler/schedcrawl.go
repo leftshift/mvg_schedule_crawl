@@ -129,7 +129,9 @@ func (net *Network) getStationForEFARouteStop(stop *goefa.EFARouteStop) (*Statio
 
     station, ok = net.Stations[name]
     if ok {
-        station.Id = &stop.Id
+        s := stops[0]
+        rs := goefa.EFARouteStop{Id: s.Id, Lat: s.Lat, Lng: s.Lng} // yeah, ugly, this hole function should be refactored eventually
+        addIdAndLoc(station, &rs)
         return station, nil
     }
 
