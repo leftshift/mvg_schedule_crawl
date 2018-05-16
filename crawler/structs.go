@@ -23,6 +23,8 @@ type Trip struct {
 type Station struct {
     Name            string          `json:"name"`
     Id              *int            `json:"id"`
+    Lat             float64         `json:"lat"`
+    Lng             float64         `json:"lng"`
     Departures      []*Departure    `json:"-"`
 }
 

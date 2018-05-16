@@ -88,6 +88,12 @@ func (net *Network) getLine(name string) *Line {
     return nil
 }
 
+func addIdAndLoc(station *Station, stop *goefa.EFARouteStop) {
+    station.Id = &stop.Id
+    station.Lat = stop.Lat
+    station.Lng = stop.Lng
+}
+
 // Get the station for an EFAstop, pulling out all the stops (no pun intended)
 // First see if a station of that name exists, if not, check if the id exists
 // If both fail, do a stopfinder request on the ID
@@ -99,7 +105,7 @@ func (net *Network) getStationForEFARouteStop(stop *goefa.EFARouteStop) (*Statio
     // sometimes have abbreviated names.
     if ok {
         if station.Id == nil {
-            station.Id = &stop.Id
+            addIdAndLoc(station, stop)
         }
         return station, nil
     }
@@ -150,7 +156,7 @@ func (net *Network) getStationForEFARouteStop(stop *goefa.EFARouteStop) (*Statio
             station = stationPtrs[i]
         }
     }
-    station.Id = &stop.Id
+    addIdAndLoc(station, stop)
     return station, nil
 }
 
