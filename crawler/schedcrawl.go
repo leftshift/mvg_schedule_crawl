@@ -98,6 +98,9 @@ func (net *Network) getStationForEFARouteStop(stop *goefa.EFARouteStop) (*Statio
     // This sometimes fails because intermediate Stops in the RoutePart
     // sometimes have abbreviated names.
     if ok {
+        if station.Id == nil {
+            station.Id = &stop.Id
+        }
         return station, nil
     }
 
