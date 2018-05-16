@@ -1,4 +1,4 @@
-package main
+package crawler
 
 import (
     "fmt"
@@ -7,8 +7,6 @@ import (
     "strings"
     "strconv"
     "errors"
-    "encoding/json"
-    "io/ioutil"
     "github.com/leftshift/goefa"
     "github.com/serjvanilla/go-overpass"
     "github.com/renstrom/fuzzysearch/fuzzy"
@@ -218,7 +216,7 @@ func (net *Network) getStationForEFARouteStop(stop *goefa.EFARouteStop) (*Statio
     return station, nil
 }
 
-func (net *Network) printNetwork() {
+func (net *Network) PrintNetwork() {
     for _, line := range net.Lines {
         fmt.Println(line.Name)
         for _, stop := range line.Stops {
@@ -230,14 +228,14 @@ func (net *Network) printNetwork() {
     }
 }
 
-func (net *Network) CrawlAllDepartures(station *Station) error {
+func (net *Network) CrawlStation(station *Station, date time.Time) error {
     loc, err := time.LoadLocation("Local")
     if err != nil {
         return err
     }
 
     firstTrain := time.Date(0, 0, 0, 00, 00, 00, 0, loc)
-    firstTrainToday, err := getTimeToday(firstTrain)
+    firstTrainToday, err := getTimeAtDate(firstTrain, date)
 
     if err != nil {
         return err
@@ -435,7 +433,7 @@ func (net *Network) buildTrip(startDept *Departure) error {
     return nil
 }
 
-func main() {
+func Crawl(date time.Time) *Network {
     efaProv, err := goefa.ProviderFromJson("mvv")
     if err != nil {
         log.Fatal(err)
@@ -452,7 +450,7 @@ func main() {
     net.Provider = efaProv
 
     // s := net.Stations["Olympiazentrum"]
-    // err = net.CrawlAllDepartures(s)
+    // err = net.CrawlStation(s)
     // if err != nil {
     //     log.Fatal(err)
     // }
@@ -464,25 +462,19 @@ func main() {
         }
         // Crawl one direction
         s := line.Stops[0]
-        err := net.CrawlAllDepartures(s)
+        err := net.CrawlStation(s, date)
         if err != nil {
             log.Fatal(err)
         }
         
         // ...and the other
         s = line.Stops[len(line.Stops)-1]
-        err = net.CrawlAllDepartures(s)
+        err = net.CrawlStation(s, date)
         if err != nil {
             log.Fatal(err)
         }
 
     }
-
-    net.printNetwork()
-
-    b, err := json.Marshal(net)
-    if err != nil {
-        log.Fatal(err)
-    }
-    err = ioutil.WriteFile("network.json", b, 0644)
+    return &net
 }
+

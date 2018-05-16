@@ -1,19 +1,18 @@
-package main
+package crawler
 
 import (
     "time"
     "github.com/leftshift/goefa"
 )
 
-func getTimeToday(oldTime time.Time) (*time.Time, error) {
-    today := time.Now()
+func getTimeAtDate(oldTime, date time.Time) (*time.Time, error) {
 
     loc, err := time.LoadLocation("Local")
     if err != nil {
         return nil, err
     }
 
-    year, month, day := today.Date()
+    year, month, day := date.Date()
     hour, minute, second := oldTime.Clock()
 
     t := time.Date(year, month, day, hour, minute, second, 0, loc)
