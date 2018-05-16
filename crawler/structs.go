@@ -1,5 +1,11 @@
 package crawler
 
+import (
+    "time"
+    "errors"
+    "github.com/leftshift/goefa"
+)
+
 type Departure struct {
     Line            *Line           `json:"-"`
     Station         *Station        `json:"station"`
